@@ -1,3 +1,5 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿using SnakesAndLadders;
+using Microsoft.AspNetCore.SignalR.Client;
 
-Console.WriteLine("Hello, World!");
+var b = new Board(10);
+b.Start(); 
