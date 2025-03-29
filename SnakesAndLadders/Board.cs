@@ -1,4 +1,6 @@
-﻿using static System.Text.Json.JsonSerializer;
+﻿using System.Text;
+using SnakesAndLadders.Interfaces;
+using static System.Text.Json.JsonSerializer;
 
 namespace SnakesAndLadders;
 
@@ -6,6 +8,8 @@ namespace SnakesAndLadders;
 
 public class Board
 {
+    private bool _debugMode = true;
+    
     private readonly int _boardSize;
     private readonly int _boardSpaces;
     private readonly int _boardRowLength;
@@ -33,62 +37,58 @@ public class Board
         DisplayBoard();
     }
     
+    private enum Direction
+    {
+        LeftToRight = 1,
+        RightToLeft = -1
+    }
+    
     private int BoardNum { get; set; }
 
-    private void SetBoardNum()
+    private void AdvanceBoardNumber()
     {
-         if (_oddEdgeNum.Contains(BoardNum))
-         {
-             Console.WriteLine($"oddEdgeNum: {BoardNum}");
-             // 4 - 5
-             // 6 - 7
-             BoardNum -= _boardSize + 1;
-             _oddEdge = true;
-         }
-         else  if (_evenEdgeNum.Contains(BoardNum))
-         {
-             // 4 - 3
-             // 6 - 5
-             BoardNum -= _boardSize - 1;
-             _oddEdge = false;
-             Console.WriteLine($"evenEdgeNum: {BoardNum}");
-         }
+        if (_oddEdgeNum.Contains(BoardNum) || _evenEdgeNum.Contains(BoardNum))
+        {
+            _oddEdge = _oddEdgeNum.Contains(BoardNum);
+            BoardNum -= _boardSize;
+            return;
+        }
 
-         if (_oddEdge)
-         {
-             BoardNum++;
-         }
-         else
-         {
-             BoardNum--;
-         }
+        var direction = _oddEdge ? Direction.LeftToRight : Direction.RightToLeft;
+        BoardNum += (int)direction;
     }
     
     // TODO: 3 digit numbers (increase _boardRowWidth to 8)
+    // TODO: add second empty row
     private void CreateBoard()
     {
-        // 4 - 113
-        // 5 - 176
+        const int cellSize = 7;
+        const int tensDigitCol = 5;
+        const int unitsDigitCol = 6;
+        const int edgeCol = 0;
+
         for (var i = 1; i < _boardSpaces; i++)
         {
-            if (i % 7 == 0)
+            string cellContent;
+
+            switch (i % cellSize)
             {
-                _board.Add(i, "|");
-            } 
-            else if ((i - 5) % 7 == 0)
-            {
-                _board.Add(i, BoardNum.ToString()[0].ToString());
+                case edgeCol:
+                    cellContent = "|";
+                    break;
+                case tensDigitCol:
+                    cellContent = (BoardNum / 10 > 0) ? (BoardNum / 10).ToString() : " ";
+                    break;
+                case unitsDigitCol:
+                    cellContent = (BoardNum % 10).ToString();
+                    AdvanceBoardNumber();
+                    break;
+                default:
+                    cellContent = " ";
+                    break;
             }
-            else if ((i - 6) % 7 == 0)
-            {
-                _board.Add(i, BoardNum.ToString().Length > 1 ? BoardNum.ToString()[1].ToString() : " ");
-                //BoardNum--;
-                SetBoardNum();
-            }
-            else
-            {
-                _board.Add(i, " ");
-            }
+
+            _board.Add(i, cellContent);
         }
 
         //DisplayBoard();
@@ -101,21 +101,19 @@ public class Board
 
     private void DisplayBoard()
     {
+        var sb = new StringBuilder();
+    
         foreach (var i in _board)
         {
             if ((i.Key - 1) % _boardRowLength == 0)
             {
-                Console.WriteLine();
-                for (var j = 0; j < _boardRowLength; j++)
-                {
-                    Console.Write("-");
-                }
-                Console.WriteLine();
+                sb.AppendLine();
+                sb.AppendLine(new string('-', _boardRowLength));
             }
-            
-            //Console.WriteLine($"k:{i.Key} v: {i.Value}");
-            Console.Write(i.Value);
+            sb.Append(i.Value);
         }
+    
+        Console.WriteLine(sb.ToString());
     }
 
     private void BoardEdgeNum()
@@ -139,11 +137,15 @@ public class Board
             
         }
         Console.WriteLine("------------------------------------------------");
-        _oddEdgeNum.ForEach(n => Console.WriteLine($"odd edge: {n}"));
-        _evenEdgeNum.ForEach(n => Console.WriteLine($"Even edge: {n}"));
+        _oddEdgeNum.ForEach(n => LogDebug($"odd edge: {n}"));
+        _evenEdgeNum.ForEach(n => LogDebug($"Even edge: {n}"));
         Console.WriteLine("------------------------------------------------");
     }
 
-
+    private void LogDebug(string message)
+    {
+        if (_debugMode)
+            Console.WriteLine(message);
+    }
 
 }
